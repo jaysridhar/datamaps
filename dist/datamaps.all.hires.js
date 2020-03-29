@@ -136,12 +136,12 @@
     }
 
     if ( options.scope === 'usa' ) {
-      projection = d3.geo.albersUsa()
+      projection = d3.geoAlbersUsa()
         .scale(width)
         .translate([width / 2, height / 2]);
     }
     else if ( options.scope === 'world' ) {
-      projection = d3.geo[options.projection]()
+	projection = d3['geo' + options.projection.charAt(0).toUpperCase() + options.projection.slice(1)]()
         .scale((width + 1) / 2 / Math.PI)
         .translate([width / 2, height / (options.projection === "mercator" ? 1.45 : 1.8)]);
     }
@@ -163,7 +163,7 @@
       projection.scale(250).clipAngle(90).rotate(options.projectionConfig.rotation)
     }
 
-    path = d3.geo.path()
+    path = d3.geoPath()
       .projection( projection );
 
     return {path: path, projection: projection};
@@ -326,7 +326,7 @@
   }
 
     function addGraticule ( layer, options ) {
-      var graticule = d3.geo.graticule();
+      var graticule = d3.geoGraticule();
       this.svg.insert("path", '.datamaps-subunits')
         .datum(graticule)
         .attr("class", "datamaps-graticule")
@@ -355,7 +355,7 @@
 
     var arcs = layer.selectAll('path.datamaps-arc').data( data, JSON.stringify );
 
-    var path = d3.geo.path()
+    var path = d3.geoPath()
         .projection(self.projection);
 
     arcs
@@ -381,6 +381,9 @@
                        break;
                    case "CHL":
                        originXY = self.latLngToXY(-33.448890, -70.669265);
+                       break;
+                   case "HRV":
+                       originXY = self.latLngToXY(45.815011, 15.981919);
                        break;
                    case "IDN":
                        originXY = self.latLngToXY(-6.208763, 106.845599);
@@ -409,11 +412,14 @@
 
             if (typeof datum.destination === 'string') {
               switch (datum.destination) {
-                     case "CAN":
+                    case "CAN":
                         destXY = self.latLngToXY(56.624472, -114.665293);
                         break;
                     case "CHL":
                         destXY = self.latLngToXY(-33.448890, -70.669265);
+                        break;
+                    case "HRV":
+                        destXY = self.latLngToXY(45.815011, 15.981919);
                         break;
                     case "IDN":
                         destXY = self.latLngToXY(-6.208763, 106.845599);
@@ -496,6 +502,9 @@
     this.svg.selectAll(".datamaps-subunit")
       .attr("data-foo", function(d) {
         var center = self.path.centroid(d);
+        if ( d.properties.iso === 'USA' ) {
+            center = self.projection([-98.58333, 39.83333])
+        }
         var xOffset = 7.5, yOffset = 5;
 
         if ( ["FL", "KY", "MI"].indexOf(d.id) > -1 ) xOffset = -2.5;
@@ -711,9 +720,9 @@
     this.options.arcConfig = defaults(options.arcConfig, defaultOptions.arcConfig);
 
     // Add the SVG container
-    if ( d3.select( this.options.element ).select('svg').length > 0 ) {
+    // if ( d3.select( this.options.element ).select('svg').length > 0 ) {
       addContainer.call(this, this.options.element, this.options.height, this.options.width );
-    }
+    // }
 
     // Add core plugins to this instance
     this.addPlugin('bubbles', handleBubbles);
@@ -1133,7 +1142,7 @@
     element.on('mousemove', null);
     element.on('mousemove', function() {
       var position = d3.mouse(self.options.element);
-      d3.select(self.svg[0][0].parentNode).select('.datamaps-hoverover')
+      d3.select(self.svg._groups[0][0].parentNode).select('.datamaps-hoverover')
         .style('top', ( (position[1] + 30)) + "px")
         .html(function() {
           var data = JSON.parse(element.attr('data-info'));
@@ -1146,7 +1155,7 @@
         .style('left', ( position[0]) + "px");
     });
 
-    d3.select(self.svg[0][0].parentNode).select('.datamaps-hoverover').style('display', 'block');
+    d3.select(self.svg._groups[0][0].parentNode).select('.datamaps-hoverover').style('display', 'block');
   };
 
   Datamap.prototype.addPlugin = function( name, pluginFn ) {
